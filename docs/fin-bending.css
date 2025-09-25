@@ -1,0 +1,39 @@
+#fin-bending-app {
+  font-family: sans-serif;
+  margin: 10px;
+}
+
+#fin-bending-app canvas {
+  border: 1px solid #ccc;
+  display: block;
+  margin: 5px 0;
+}
+
+#fin-bending-app .slider {
+  margin: 5px 0;
+  width: 100%;
+}
+
+#fin-bending-app #output {
+  margin: 5px 0;
+  font-weight: bold;
+}
+
+#fin-bending-app .section {
+  margin: 15px 0;
+  padding: 10px;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+  max-width: 520px;
+  background: #fafafa;
+}
+
+#fin-bending-app .section h4 {
+  margin: 5px 0;
+}
+
+#fin-bending-app .caption {
+  font-size: 0.9em;
+  color: #333;
+  margin-top: 3px;
+}
