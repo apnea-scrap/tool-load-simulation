@@ -10,10 +10,17 @@
 
   const DEFAULT_SEGMENTS = 200;
   const MIN_EXTRA_LAYER_LENGTH = 50;
+  const DEFAULT_MARGIN = 20;
 
   function clampExtraLayers(layersFoot, layersTip) {
     const diff = Number(layersFoot) - Number(layersTip);
     return isFinite(diff) ? Math.max(0, diff) : 0;
+  }
+
+  function roundNumber(value, digits) {
+    if (typeof value !== 'number' || !isFinite(value)) return value;
+    const factor = Math.pow(10, digits);
+    return Math.round(value * factor) / factor;
   }
 
   function effectiveThicknessAt(x, params) {
@@ -147,6 +154,173 @@
     };
   }
 
+  function createBendingProfilePoints(profile, options) {
+    if (!profile || !Array.isArray(profile.X) || !Array.isArray(profile.Y)) return [];
+
+    const opts = options || {};
+    const arcDigits = typeof opts.arcDigits === 'number' ? opts.arcDigits : 2;
+    const xDigits = typeof opts.xDigits === 'number' ? opts.xDigits : 4;
+    const yDigits = typeof opts.yDigits === 'number' ? opts.yDigits : 4;
+    const length = Math.min(profile.X.length, profile.Y.length);
+    const points = new Array(length);
+
+    for (var i = 0; i < length; i += 1) {
+      const arcValue = Array.isArray(profile.x) ? profile.x[i] : null;
+      points[i] = {
+        arcPosition: roundNumber(arcValue, arcDigits),
+        x: roundNumber(profile.X[i], xDigits),
+        y: roundNumber(profile.Y[i], yDigits),
+      };
+    }
+
+    return points;
+  }
+
+  function describeProfile(options) {
+    if (options && typeof options.description === 'string') return options.description;
+
+    var parts = [];
+    if (options && (options.load !== undefined || options.tipAngleDeg !== undefined)) {
+      if (options.load !== undefined) parts.push('load ' + options.load);
+      if (options.tipAngleDeg !== undefined) parts.push('tip ' + options.tipAngleDeg + ' degrees');
+    }
+
+    if (parts.length === 0) return 'Computed fin bending profile.';
+    return 'Computed fin bending profile, ' + parts.join(', ') + '.';
+  }
+
+  function createBendingProfileSvg(points, options) {
+    if (!points || !Array.isArray(points) || points.length === 0) return null;
+
+    var xs = new Array(points.length);
+    var ys = new Array(points.length);
+    for (var i = 0; i < points.length; i += 1) {
+      xs[i] = points[i].x;
+      ys[i] = points[i].y;
+    }
+
+    const minX = Math.min.apply(null, xs);
+    const maxX = Math.max.apply(null, xs);
+    const minY = Math.min.apply(null, ys);
+    const maxY = Math.max.apply(null, ys);
+
+    const margin = options && typeof options.margin === 'number' ? Math.max(0, options.margin) : DEFAULT_MARGIN;
+    const width = Math.max(1, maxX - minX);
+    const height = Math.max(1, maxY - minY);
+    const viewWidth = width + margin * 2;
+    const viewHeight = height + margin * 2;
+
+    function toSvgCoords(point) {
+      const x = point.x - minX + margin;
+      const y = viewHeight - (point.y - minY + margin);
+      return { x: x, y: y };
+    }
+
+    var pathSegments = new Array(points.length);
+    for (var j = 0; j < points.length; j += 1) {
+      const svgPoint = toSvgCoords(points[j]);
+      const command = j === 0 ? 'M' : 'L';
+      pathSegments[j] = command + svgPoint.x.toFixed(2) + ' ' + svgPoint.y.toFixed(2);
+    }
+
+    const straightStart = toSvgCoords({ x: minX, y: minY });
+    const straightEnd = toSvgCoords({ x: maxX, y: minY });
+    const title = options && typeof options.title === 'string' ? options.title : 'Fin bending profile';
+    const desc = describeProfile(options);
+
+    var highlightMarkup = '';
+    if (options && options.highlight && typeof options.highlight.x === 'number' && typeof options.highlight.y === 'number') {
+      const highlightPoint = toSvgCoords(options.highlight);
+      const left = { x: highlightPoint.x - 8, y: highlightPoint.y - 15 };
+      const right = { x: highlightPoint.x + 8, y: highlightPoint.y - 15 };
+      highlightMarkup = '  <polygon points="' +
+        highlightPoint.x.toFixed(2) + ',' + highlightPoint.y.toFixed(2) + ' ' +
+        left.x.toFixed(2) + ',' + left.y.toFixed(2) + ' ' +
+        right.x.toFixed(2) + ',' + right.y.toFixed(2) + '" fill="#d62728"/>\n';
+    }
+
+    const svg = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + viewWidth.toFixed(2) + ' ' + viewHeight.toFixed(2) + '" ' +
+      'width="' + viewWidth.toFixed(2) + '" height="' + viewHeight.toFixed(2) + '" ' +
+      'role="img" aria-labelledby="title desc">\n' +
+      '  <title id="title">' + title + '</title>\n' +
+      '  <desc id="desc">' + desc + '</desc>\n' +
+      '  <rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>\n' +
+      '  <g stroke="#d0d0d0" stroke-width="0.5">\n' +
+      '    <line x1="' + straightStart.x.toFixed(2) + '" y1="' + straightStart.y.toFixed(2) + '" x2="' + straightEnd.x.toFixed(2) + '" y2="' + straightEnd.y.toFixed(2) + '"/>\n' +
+      '  </g>\n' +
+      '  <path d="' + pathSegments.join(' ') + '" fill="none" stroke="#1f77b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>\n' +
+      highlightMarkup +
+      '  <circle cx="' + straightStart.x.toFixed(2) + '" cy="' + straightStart.y.toFixed(2) + '" r="3" fill="#1f77b4"/>\n' +
+      '  <circle cx="' + straightEnd.x.toFixed(2) + '" cy="' + straightEnd.y.toFixed(2) + '" r="3" fill="#1f77b4"/>\n' +
+      '  <text x="' + straightStart.x.toFixed(2) + '" y="' + (straightStart.y - 6).toFixed(2) + '" font-size="6" fill="#333">Foot</text>\n' +
+      '  <text x="' + straightEnd.x.toFixed(2) + '" y="' + (straightEnd.y - 6).toFixed(2) + '" font-size="6" fill="#333">Tip</text>\n' +
+      '</svg>\n';
+
+    return svg;
+  }
+
+  function createLaminateStackSvg(laminate, options) {
+    if (!laminate) return null;
+
+    const baseLayers = Array.isArray(laminate.baseLayers) ? laminate.baseLayers : [];
+    const extraLayers = Array.isArray(laminate.extraLayers) ? laminate.extraLayers : [];
+    if (baseLayers.length === 0 && extraLayers.length === 0) return null;
+
+    const canvasWidth = options && typeof options.width === 'number' ? options.width : 500;
+    const canvasHeight = options && typeof options.height === 'number' ? options.height : 200;
+    const margin = options && typeof options.margin === 'number' ? Math.max(0, options.margin) : DEFAULT_MARGIN;
+    const x0 = margin;
+    const y0 = margin;
+    const lengthScale = (canvasWidth - 2 * margin) / 600;
+    const widthScale = (canvasHeight - 2 * margin) / 300;
+
+    const lengthPx = Math.max(0, (laminate.length || 0) * lengthScale);
+    const widthPx = Math.max(0, (laminate.width || 0) * widthScale);
+
+    var layerRects = '';
+
+    for (var i = 0; i < baseLayers.length; i += 1) {
+      layerRects += '  <rect x="' + x0.toFixed(2) + '" y="' + y0.toFixed(2) + '" width="' + lengthPx.toFixed(2) + '" ' +
+        'height="' + widthPx.toFixed(2) + '" fill="rgba(0,0,200,0.3)" stroke="#000" stroke-width="0.8"/>\n';
+    }
+
+    for (var j = 0; j < extraLayers.length; j += 1) {
+      const layer = extraLayers[j];
+      const layerLengthPx = Math.max(0, (layer.length || 0) * lengthScale);
+      layerRects += '  <rect x="' + x0.toFixed(2) + '" y="' + y0.toFixed(2) + '" width="' + layerLengthPx.toFixed(2) + '" ' +
+        'height="' + widthPx.toFixed(2) + '" fill="rgba(200,0,0,0.3)" stroke="#000" stroke-width="0.8"/>\n';
+    }
+
+    const footLabelX = x0;
+    const tipLabelX = x0 + Math.max(lengthPx, 0);
+    const labelY = y0 + widthPx + 16;
+    var highlightMarkup = '';
+    if (options && typeof options.highlightX === 'number') {
+      const clampedHighlight = Math.max(0, options.highlightX);
+      const highlightPx = x0 + clampedHighlight * lengthScale;
+      highlightMarkup = '  <line x1="' + highlightPx.toFixed(2) + '" y1="' + y0.toFixed(2) + '" x2="' + highlightPx.toFixed(2) + '" y2="' + (y0 + widthPx).toFixed(2) + '" stroke="#d62728" stroke-width="1.2"/>\n';
+    }
+    const title = options && typeof options.title === 'string' ? options.title : 'Laminate stack';
+    const desc = options && typeof options.description === 'string'
+      ? options.description
+      : 'Laminate layering for ' + laminate.layersFoot + ' layers at the foot and ' + laminate.layersTip + ' layers at the tip.';
+
+    const svg = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + canvasWidth + ' ' + canvasHeight + '" ' +
+      'width="' + canvasWidth + '" height="' + canvasHeight + '" role="img" aria-labelledby="laminate-title laminate-desc">\n' +
+      '  <title id="laminate-title">' + title + '</title>\n' +
+      '  <desc id="laminate-desc">' + desc + '</desc>\n' +
+      '  <rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>\n' +
+      layerRects +
+      highlightMarkup +
+      '  <text x="' + footLabelX.toFixed(2) + '" y="' + labelY.toFixed(2) + '" font-size="12" fill="#333">Foot</text>\n' +
+      '  <text x="' + tipLabelX.toFixed(2) + '" y="' + labelY.toFixed(2) + '" font-size="12" fill="#333" text-anchor="end">Tip</text>\n' +
+      '</svg>\n';
+
+    return svg;
+  }
+
   function solveForLoad(params, options) {
     const opts = options || {};
     const targetAngle = typeof opts.targetAngle === 'number' ? opts.targetAngle : 90;
@@ -204,5 +378,8 @@
     solveForLoad: solveForLoad,
     computeLaminateStack: computeLaminateStack,
     computeDefaultParams: computeDefaultParams,
+    createBendingProfilePoints: createBendingProfilePoints,
+    createBendingProfileSvg: createBendingProfileSvg,
+    createLaminateStackSvg: createLaminateStackSvg,
   };
 });

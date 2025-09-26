@@ -34,3 +34,34 @@ test('bending profile arrays share the same length', () => {
   expect(profile.theta.length).toBe(profile.X.length);
   expect(profile.X.length).toBe(profile.Y.length);
 });
+
+test('createBendingProfileSvg produces accessible markup', () => {
+  const params = createParams();
+  const load = 40;
+  const profile = core.computeBendingProfile(load, params, { segments: 20 });
+  const points = core.createBendingProfilePoints(profile);
+  const highlight = points[profile.maxCurvatureIndex];
+  const svg = core.createBendingProfileSvg(points, {
+    load: Number(load.toFixed(2)),
+    tipAngleDeg: Number(profile.tipAngleDeg.toFixed(2)),
+    highlight: highlight ? { x: highlight.x, y: highlight.y } : null,
+  });
+
+  expect(typeof svg).toBe('string');
+  expect(svg).toContain('<svg');
+  expect(svg).toContain('role="img"');
+  expect(svg).toContain('Fin bending profile');
+  expect(svg).toContain('<polygon');
+});
+
+test('createLaminateStackSvg reflects layer counts', () => {
+  const params = createParams();
+  const laminate = core.computeLaminateStack(params);
+  const svg = core.createLaminateStackSvg(laminate, { highlightX: laminate.length / 2 });
+
+  expect(typeof svg).toBe('string');
+  expect(svg).toContain('Laminate stack');
+  expect(svg).toContain('Foot');
+  expect(svg).toContain('Tip');
+  expect(svg).toContain('<line');
+});

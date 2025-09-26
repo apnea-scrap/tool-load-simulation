@@ -3,10 +3,18 @@
   margin: 10px;
 }
 
-#fin-bending-app canvas {
+#fin-bending-app canvas,
+#fin-bending-app .svg-output {
   border: 1px solid #ccc;
   display: block;
   margin: 5px 0;
+  max-width: 520px;
+  overflow: hidden;
+}
+
+#fin-bending-app .svg-output svg {
+  width: 100%;
+  height: auto;
 }
 
 #fin-bending-app .slider {

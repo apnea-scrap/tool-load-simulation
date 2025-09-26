@@ -1,7 +1,7 @@
 (function () {
   const core = typeof window !== 'undefined' ? window.finBendingCore : (typeof finBendingCore !== 'undefined' ? finBendingCore : null);
   if (!core) {
-    throw new Error('fin-bending-core.js must be loaded before fin-bending.js');
+    throw new Error('fin-bending-core.js must be loaded before fin-bending-render.js');
   }
   const computeDefaultParams = core.computeDefaultParams;
   const computeBendingProfile = core.computeBendingProfile;
@@ -24,7 +24,7 @@
     '  <input type="range" id="length" min="100" max="600" step="10" value="250" class="slider"><br>' +
     '  <label>Blade width [mm]: <span id="widthVal"></span></label>' +
     '  <input type="range" id="width" min="50" max="300" step="10" value="180" class="slider"><br>' +
-    '  <canvas id="laminate" width="500" height="200"></canvas>' +
+    '  <div id="laminateSvg" class="svg-output"></div>' +
     '  <div class="caption">Foot (left) — Tip (right)</div>' +
     '</div>' +
     '<div class="section">' +
@@ -37,7 +37,7 @@
     '<div class="section">' +
     '  <h4>Bending Calculation</h4>' +
     '  <p id="output"></p>' +
-    '  <canvas id="plot" width="500" height="400"></canvas>' +
+    '  <div id="profileSvg" class="svg-output"></div>' +
     '  <div class="caption">Foot (left) — Tip (right)</div>' +
     '</div>';
 
@@ -82,108 +82,37 @@
     })(slider, meta, label);
   }
 
-  const laminateCanvas = appRoot.querySelector('#laminate');
-  const laminateCtx = laminateCanvas.getContext('2d');
-  const plotCanvas = appRoot.querySelector('#plot');
-  const plotCtx = plotCanvas.getContext('2d');
+  const laminateContainer = appRoot.querySelector('#laminateSvg');
+  const profileContainer = appRoot.querySelector('#profileSvg');
   const outputEl = appRoot.querySelector('#output');
-
-  function drawLaminate(stack, maxBendX) {
-    laminateCtx.clearRect(0, 0, laminateCanvas.width, laminateCanvas.height);
-
-    if (!stack) return;
-
-    const L = stack.length;
-    const b = stack.width;
-    const layersTip = stack.layersTip;
-    const layersFoot = stack.layersFoot;
-
-    const margin = 20;
-    const lengthScale = (laminateCanvas.width - 2 * margin) / 600;
-    const widthScale = (laminateCanvas.height - 2 * margin) / 300;
-    const lengthPx = L * lengthScale;
-    const widthPx = b * widthScale;
-    const x0 = margin;
-    const y0 = margin;
-
-    for (var i = 0; i < layersTip; i += 1) {
-      laminateCtx.fillStyle = 'rgba(0, 0, 200, 0.3)';
-      laminateCtx.fillRect(x0, y0, lengthPx, widthPx);
-      laminateCtx.strokeStyle = 'black';
-      laminateCtx.strokeRect(x0, y0, lengthPx, widthPx);
-    }
-
-    const extraLayers = stack.extraLayers || [];
-    for (var j = 0; j < extraLayers.length; j += 1) {
-      const layerLengthPx = extraLayers[j].length * lengthScale;
-      laminateCtx.fillStyle = 'rgba(200, 0, 0, 0.3)';
-      laminateCtx.fillRect(x0, y0, layerLengthPx, widthPx);
-      laminateCtx.strokeStyle = 'black';
-      laminateCtx.strokeRect(x0, y0, layerLengthPx, widthPx);
-    }
-
-    if (typeof maxBendX === 'number') {
-      const bendPos = x0 + maxBendX * lengthScale;
-      laminateCtx.strokeStyle = 'red';
-      laminateCtx.beginPath();
-      laminateCtx.moveTo(bendPos, y0);
-      laminateCtx.lineTo(bendPos, y0 + widthPx);
-      laminateCtx.stroke();
-    }
-  }
-
-  function drawBendingPlot(profile) {
-    plotCtx.clearRect(0, 0, plotCanvas.width, plotCanvas.height);
-    plotCtx.save();
-    plotCtx.translate(50, 30);
-
-    const L = params.L;
-    const tipDeflection = profile.tipDeflection;
-    const axisMaxY = Math.max(50, Math.ceil(tipDeflection / 50) * 50);
-
-    plotCtx.strokeStyle = 'gray';
-    plotCtx.beginPath();
-    plotCtx.moveTo(0, 0);
-    plotCtx.lineTo(0, axisMaxY + 20);
-    plotCtx.moveTo(0, 0);
-    plotCtx.lineTo(L + 40, 0);
-    plotCtx.stroke();
-
-    plotCtx.fillStyle = 'black';
-    plotCtx.fillText('X (mm)', L / 2, 20);
-    plotCtx.fillText('Y (mm)', -30, axisMaxY + 20);
-
-    plotCtx.strokeStyle = 'blue';
-    plotCtx.beginPath();
-    plotCtx.moveTo(profile.X[0], profile.Y[0]);
-    for (var i = 1; i < profile.X.length; i += 1) {
-      plotCtx.lineTo(profile.X[i], profile.Y[i]);
-    }
-    plotCtx.stroke();
-
-    const maxIdx = profile.maxCurvatureIndex;
-    const maxX = profile.X[maxIdx];
-    const maxY = profile.Y[maxIdx];
-
-    plotCtx.fillStyle = 'red';
-    plotCtx.beginPath();
-    plotCtx.moveTo(maxX, maxY);
-    plotCtx.lineTo(maxX - 8, maxY - 15);
-    plotCtx.lineTo(maxX + 8, maxY - 15);
-    plotCtx.closePath();
-    plotCtx.fill();
-
-    plotCtx.restore();
-  }
 
   function update() {
     const load = solveForLoad(params);
     const profile = computeBendingProfile(load, params);
     const laminateStack = computeLaminateStack(params);
     const loadKg = load / 9.81;
+    const points = core.createBendingProfilePoints(profile);
+    const highlightPoint = points[profile.maxCurvatureIndex];
+    const profileSvg = core.createBendingProfileSvg(points, {
+      load: Number(load.toFixed(1)),
+      tipAngleDeg: Number(profile.tipAngleDeg.toFixed(1)),
+      description: `Interactive profile. Load ${load.toFixed(1)} N, tip angle ${profile.tipAngleDeg.toFixed(1)} degrees.`,
+      highlight: highlightPoint ? { x: highlightPoint.x, y: highlightPoint.y } : null,
+    });
 
-    drawBendingPlot(profile);
-    drawLaminate(laminateStack, profile.x[profile.maxCurvatureIndex]);
+    if (profileContainer) {
+      profileContainer.innerHTML = profileSvg || '';
+    }
+
+    const laminateHighlight = Array.isArray(profile.x) ? profile.x[profile.maxCurvatureIndex] : null;
+    const laminateSvg = core.createLaminateStackSvg(laminateStack, {
+      description: `Laminate layering for ${laminateStack.layersFoot} layers at the foot and ${laminateStack.layersTip} layers at the tip.`,
+      highlightX: laminateHighlight,
+    });
+
+    if (laminateContainer) {
+      laminateContainer.innerHTML = laminateSvg || '';
+    }
 
     outputEl.textContent = 'Angle at tip = ' + profile.tipAngleDeg.toFixed(1) + '°, Load at tip = ' + load.toFixed(1) + ' N (' + loadKg.toFixed(2) + ' kg)';
   }

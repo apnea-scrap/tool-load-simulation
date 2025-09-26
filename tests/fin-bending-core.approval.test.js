@@ -36,11 +36,7 @@ describe('fin bending core approvals', () => {
       const profile = core.computeBendingProfile(load, params);
       const laminate = core.computeLaminateStack(params);
 
-      const shape = profile.X.map((xValue, index) => ({
-        arcPosition: round(profile.x[index], 2),
-        x: round(xValue, 4),
-        y: round(profile.Y[index], 4),
-      }));
+      const shape = core.createBendingProfilePoints(profile);
 
       const laminateSummary = {
         layersTip: laminate.layersTip,
