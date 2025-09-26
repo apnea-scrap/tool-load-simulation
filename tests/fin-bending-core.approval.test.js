@@ -69,9 +69,9 @@ describe('fin bending core approvals', () => {
         laminate: laminateSummary,
       };
 
-      approve(scenario.id, approvalPayload);
-      renderBendingProfileSvg(scenario.id, approvalPayload);
-      renderLaminateStackSvg(`${scenario.id}-laminate`, {
+      approve(`${scenario.id}.payload`, approvalPayload);
+      renderBendingProfileSvg(`${scenario.id}.profile`, approvalPayload);
+      renderLaminateStackSvg(`${scenario.id}.laminate`, {
         layersTip: laminateSummary.layersTip,
         layersFoot: laminateSummary.layersFoot,
         length: laminate.length,
