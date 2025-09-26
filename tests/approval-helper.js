@@ -17,25 +17,47 @@ function writeArtifact(name, extension, content) {
   return targetPath;
 }
 
-function renderBendingProfileSvg(name, data) {
-  if (!data || !Array.isArray(data.points) || data.points.length === 0) return null;
-
-  const svg = core.createBendingProfileSvg(data.points, {
-    description: `Approved curve for default parameters, load ${data.load}, tip ${data.tipAngleDeg} degrees.`,
-  });
-
-  return writeArtifact(name, 'approved.svg', svg);
+function removeArtifact(name, extension) {
+  ensureApprovalsDir();
+  const targetPath = path.join(approvalsDir, `${name}.${extension}`);
+  if (fs.existsSync(targetPath)) {
+    fs.unlinkSync(targetPath);
+  }
 }
 
-function renderLaminateStackSvg(name, data) {
+function sanitizeVariant(variant) {
+  return variant === 'received' ? 'received' : 'approved';
+}
+
+function renderBendingProfileSvg(name, data, variant = 'approved') {
+  if (!data || !Array.isArray(data.points) || data.points.length === 0) return null;
+
+  const sanitizedVariant = sanitizeVariant(variant);
+  const svg = core.createBendingProfileSvg(data.points, {
+    description: `${sanitizedVariant === 'approved' ? 'Approved' : 'Received'} curve for default parameters, load ${data.load}, tip ${data.tipAngleDeg} degrees.`,
+  });
+
+  const target = writeArtifact(name, `${sanitizedVariant}.svg`, svg);
+  if (sanitizedVariant === 'approved') {
+    removeArtifact(name, 'received.svg');
+  }
+  return target;
+}
+
+function renderLaminateStackSvg(name, data, variant = 'approved') {
   if (!data) return null;
 
+  const sanitizedVariant = sanitizeVariant(variant);
   const svg = core.createLaminateStackSvg(data, {
-    description: `Approved laminate layering for ${data.layersFoot} layers at the foot and ${data.layersTip} layers at the tip.`,
+    description: `${sanitizedVariant === 'approved' ? 'Approved' : 'Received'} laminate layering for ${data.layersFoot} layers at the foot and ${data.layersTip} layers at the tip.`,
   });
 
   if (!svg) return null;
-  return writeArtifact(name, 'approved.svg', svg);
+  const target = writeArtifact(name, `${sanitizedVariant}.svg`, svg);
+  if (sanitizedVariant === 'approved') {
+    removeArtifact(name, 'received.svg');
+  }
+  return target;
 }
 
 function serialize(value) {

@@ -21,6 +21,19 @@ const scenarios = [
     params: () => core.computeDefaultParams(),
     description: 'Baseline parameters used by the UI when the calculator loads.',
   },
+  {
+    id: 'cantilever-compare',
+    params: () => ({
+      layersFoot: 3,
+      layersTip: 3,
+      L: 250,
+      b: 180,
+      E: 32,
+      thickness: 0.33,
+    }),
+    description: 'Baseline parameters used by the UI when the calculator loads.'
+,
+  },
 ];
 
 describe('fin bending core approvals', () => {
@@ -69,16 +82,36 @@ describe('fin bending core approvals', () => {
         laminate: laminateSummary,
       };
 
-      approve(`${scenario.id}.payload`, approvalPayload);
-      renderBendingProfileSvg(`${scenario.id}.profile`, approvalPayload);
-      renderLaminateStackSvg(`${scenario.id}.laminate`, {
-        layersTip: laminateSummary.layersTip,
-        layersFoot: laminateSummary.layersFoot,
-        length: laminate.length,
-        width: laminate.width,
-        baseLayers: laminate.baseLayers,
-        extraLayers: laminate.extraLayers,
-      });
+      let approvalError;
+      try {
+        approve(`${scenario.id}.payload`, approvalPayload);
+      } catch (error) {
+        approvalError = error;
+      }
+
+      const svgVariant = approvalError ? 'received' : 'approved';
+
+      let renderError;
+      try {
+        renderBendingProfileSvg(`${scenario.id}.profile`, approvalPayload, svgVariant);
+        renderLaminateStackSvg(
+          `${scenario.id}.laminate`,
+          {
+            layersTip: laminateSummary.layersTip,
+            layersFoot: laminateSummary.layersFoot,
+            length: laminate.length,
+            width: laminate.width,
+            baseLayers: laminate.baseLayers,
+            extraLayers: laminate.extraLayers,
+          },
+          svgVariant
+        );
+      } catch (error) {
+        renderError = error;
+      }
+
+      if (approvalError) throw approvalError;
+      if (renderError) throw renderError;
     });
   });
 });

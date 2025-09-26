@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200" width="500" height="200" role="img" aria-labelledby="laminate-title laminate-desc">
+  <title id="laminate-title">Laminate stack</title>
+  <desc id="laminate-desc">Approved laminate layering for 3 layers at the foot and 3 layers at the tip.</desc>
+  <rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>
+  <rect x="20.00" y="20.00" width="191.67" height="96.00" fill="rgba(0,0,200,0.3)" stroke="#000" stroke-width="0.8"/>
+  <rect x="20.00" y="20.00" width="191.67" height="96.00" fill="rgba(0,0,200,0.3)" stroke="#000" stroke-width="0.8"/>
+  <rect x="20.00" y="20.00" width="191.67" height="96.00" fill="rgba(0,0,200,0.3)" stroke="#000" stroke-width="0.8"/>
+  <text x="20.00" y="132.00" font-size="12" fill="#333">Foot</text>
+  <text x="211.67" y="132.00" font-size="12" fill="#333" text-anchor="end">Tip</text>
+</svg>
