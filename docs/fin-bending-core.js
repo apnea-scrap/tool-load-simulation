@@ -212,7 +212,7 @@
 
     function toSvgCoords(point) {
       const x = point.x - minX + margin;
-      const y = viewHeight - (point.y - minY + margin);
+      const y = point.y - minY + margin;
       return { x: x, y: y };
     }
 
