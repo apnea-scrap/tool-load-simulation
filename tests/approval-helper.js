@@ -70,6 +70,62 @@ function renderBendingProfileSvg(name, data) {
   return writeArtifact(name, 'approved.svg', svg);
 }
 
+function renderLaminateStackSvg(name, data) {
+  if (!data) return null;
+
+  const baseLayers = Array.isArray(data.baseLayers) ? data.baseLayers : [];
+  const extraLayers = Array.isArray(data.extraLayers) ? data.extraLayers : [];
+  if (baseLayers.length === 0 && extraLayers.length === 0) return null;
+
+  const canvasWidth = 500;
+  const canvasHeight = 200;
+  const margin = 20;
+  const x0 = margin;
+  const y0 = margin;
+  const lengthScale = (canvasWidth - 2 * margin) / 600;
+  const widthScale = (canvasHeight - 2 * margin) / 300;
+
+  const lengthPx = Math.max(0, (data.length || 0) * lengthScale);
+  const widthPx = Math.max(0, (data.width || 0) * widthScale);
+
+  const layerRects = [];
+
+  for (var i = 0; i < baseLayers.length; i += 1) {
+    layerRects.push(
+      `  <rect x="${x0.toFixed(2)}" y="${y0.toFixed(2)}" width="${lengthPx.toFixed(2)}" ` +
+        `height="${widthPx.toFixed(2)}" fill="rgba(0,0,200,0.3)" stroke="#000" stroke-width="0.8"/>
+`
+    );
+  }
+
+  for (var j = 0; j < extraLayers.length; j += 1) {
+    const layer = extraLayers[j];
+    const layerLengthPx = Math.max(0, (layer.length || 0) * lengthScale);
+    layerRects.push(
+      `  <rect x="${x0.toFixed(2)}" y="${y0.toFixed(2)}" width="${layerLengthPx.toFixed(2)}" ` +
+        `height="${widthPx.toFixed(2)}" fill="rgba(200,0,0,0.3)" stroke="#000" stroke-width="0.8"/>
+`
+    );
+  }
+
+  const footLabelX = x0;
+  const tipLabelX = x0 + Math.max(lengthPx, 0);
+  const labelY = y0 + widthPx + 16;
+
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvasWidth} ${canvasHeight}" ` +
+    `width="${canvasWidth}" height="${canvasHeight}" role="img" aria-labelledby="laminate-title laminate-desc">\n` +
+    `  <title id="laminate-title">Laminate stack</title>\n` +
+    `  <desc id="laminate-desc">Approved laminate layering for ${data.layersFoot} layers at the foot and ${data.layersTip} layers at the tip.</desc>\n` +
+    `  <rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>\n` +
+    layerRects.join('') +
+    `  <text x="${footLabelX.toFixed(2)}" y="${labelY.toFixed(2)}" font-size="12" fill="#333">Foot</text>\n` +
+    `  <text x="${tipLabelX.toFixed(2)}" y="${labelY.toFixed(2)}" font-size="12" fill="#333" text-anchor="end">Tip</text>\n` +
+    `</svg>\n`;
+
+  return writeArtifact(name, 'approved.svg', svg);
+}
+
 function serialize(value) {
   if (typeof value === 'string') return value.endsWith('\n') ? value : `${value}\n`;
   return `${JSON.stringify(value, null, 2)}\n`;
@@ -105,6 +161,7 @@ function approve(name, value) {
 
 module.exports = {
   approve,
+  renderLaminateStackSvg,
   renderBendingProfileSvg,
   writeArtifact,
 };

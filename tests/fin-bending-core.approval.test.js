@@ -1,5 +1,5 @@
 const core = require('../docs/fin-bending-core.js');
-const { approve, renderBendingProfileSvg } = require('./approval-helper');
+const { approve, renderBendingProfileSvg, renderLaminateStackSvg } = require('./approval-helper');
 
 function round(value, digits) {
   const factor = Math.pow(10, digits);
@@ -34,12 +34,31 @@ describe('fin bending core approvals', () => {
       const params = cloneParams(paramsSource);
       const load = core.solveForLoad(params);
       const profile = core.computeBendingProfile(load, params);
+      const laminate = core.computeLaminateStack(params);
 
       const shape = profile.X.map((xValue, index) => ({
         arcPosition: round(profile.x[index], 2),
         x: round(xValue, 4),
         y: round(profile.Y[index], 4),
       }));
+
+      const laminateSummary = {
+        layersTip: laminate.layersTip,
+        layersFoot: laminate.layersFoot,
+        length: round(laminate.length, 2),
+        width: round(laminate.width, 2),
+        thickness: round(laminate.thickness, 4),
+        baseLayers: (laminate.baseLayers || []).map((layer) => ({
+          index: layer.index,
+          length: round(layer.length, 2),
+          coverageRatio: round(layer.coverageRatio, 4),
+        })),
+        extraLayers: (laminate.extraLayers || []).map((layer) => ({
+          index: layer.index,
+          length: round(layer.length, 2),
+          coverageRatio: round(layer.coverageRatio, 4),
+        })),
+      };
 
       const approvalPayload = {
         scenario: {
@@ -51,10 +70,19 @@ describe('fin bending core approvals', () => {
         tipAngleDeg: round(profile.tipAngleDeg, 9),
         tipDeflection: round(profile.tipDeflection, 9),
         points: shape,
+        laminate: laminateSummary,
       };
 
       approve(scenario.id, approvalPayload);
       renderBendingProfileSvg(scenario.id, approvalPayload);
+      renderLaminateStackSvg(`${scenario.id}-laminate`, {
+        layersTip: laminateSummary.layersTip,
+        layersFoot: laminateSummary.layersFoot,
+        length: laminate.length,
+        width: laminate.width,
+        baseLayers: laminate.baseLayers,
+        extraLayers: laminate.extraLayers,
+      });
     });
   });
 });

@@ -6,6 +6,7 @@
   const computeDefaultParams = core.computeDefaultParams;
   const computeBendingProfile = core.computeBendingProfile;
   const solveForLoad = core.solveForLoad;
+  const computeLaminateStack = core.computeLaminateStack;
 
   const appRoot = document.getElementById('fin-bending-app');
   if (!appRoot) {
@@ -87,13 +88,15 @@
   const plotCtx = plotCanvas.getContext('2d');
   const outputEl = appRoot.querySelector('#output');
 
-  function drawLaminate(maxBendX) {
+  function drawLaminate(stack, maxBendX) {
     laminateCtx.clearRect(0, 0, laminateCanvas.width, laminateCanvas.height);
 
-    const L = params.L;
-    const b = params.b;
-    const layersTip = params.layersTip;
-    const layersFoot = params.layersFoot;
+    if (!stack) return;
+
+    const L = stack.length;
+    const b = stack.width;
+    const layersTip = stack.layersTip;
+    const layersFoot = stack.layersFoot;
 
     const margin = 20;
     const lengthScale = (laminateCanvas.width - 2 * margin) / 600;
@@ -110,17 +113,13 @@
       laminateCtx.strokeRect(x0, y0, lengthPx, widthPx);
     }
 
-    const extraLayers = Math.max(0, layersFoot - layersTip);
-    if (extraLayers > 0) {
-      for (var j = 1; j <= extraLayers; j += 1) {
-        const fraction = j / extraLayers;
-        const layerLength = Math.max(50, L * (1 - fraction * 0.8));
-        const layerLengthPx = layerLength * lengthScale;
-        laminateCtx.fillStyle = 'rgba(200, 0, 0, 0.3)';
-        laminateCtx.fillRect(x0, y0, layerLengthPx, widthPx);
-        laminateCtx.strokeStyle = 'black';
-        laminateCtx.strokeRect(x0, y0, layerLengthPx, widthPx);
-      }
+    const extraLayers = stack.extraLayers || [];
+    for (var j = 0; j < extraLayers.length; j += 1) {
+      const layerLengthPx = extraLayers[j].length * lengthScale;
+      laminateCtx.fillStyle = 'rgba(200, 0, 0, 0.3)';
+      laminateCtx.fillRect(x0, y0, layerLengthPx, widthPx);
+      laminateCtx.strokeStyle = 'black';
+      laminateCtx.strokeRect(x0, y0, layerLengthPx, widthPx);
     }
 
     if (typeof maxBendX === 'number') {
@@ -180,10 +179,11 @@
   function update() {
     const load = solveForLoad(params);
     const profile = computeBendingProfile(load, params);
+    const laminateStack = computeLaminateStack(params);
     const loadKg = load / 9.81;
 
     drawBendingPlot(profile);
-    drawLaminate(profile.x[profile.maxCurvatureIndex]);
+    drawLaminate(laminateStack, profile.x[profile.maxCurvatureIndex]);
 
     outputEl.textContent = 'Angle at tip = ' + profile.tipAngleDeg.toFixed(1) + '°, Load at tip = ' + load.toFixed(1) + ' N (' + loadKg.toFixed(2) + ' kg)';
   }

@@ -106,6 +106,47 @@
     };
   }
 
+  function computeLaminateStack(params) {
+    const layersTip = Number(params.layersTip) || 0;
+    const layersFoot = Number(params.layersFoot) || 0;
+    const L = Number(params.L) || 0;
+    const b = Number(params.b) || 0;
+    const thickness = Number(params.thickness) || 0;
+    const extraLayersCount = clampExtraLayers(layersFoot, layersTip);
+
+    const baseLayers = new Array(layersTip);
+    for (var i = 0; i < layersTip; i += 1) {
+      baseLayers[i] = {
+        index: i + 1,
+        length: L,
+        coverageRatio: L > 0 ? 1 : 0,
+        type: 'tip',
+      };
+    }
+
+    const extraLayers = new Array(extraLayersCount);
+    for (var j = 1; j <= extraLayersCount; j += 1) {
+      const fraction = j / extraLayersCount;
+      const layerLength = Math.max(MIN_EXTRA_LAYER_LENGTH, L * (1 - fraction * 0.8));
+      extraLayers[j - 1] = {
+        index: j,
+        length: layerLength,
+        coverageRatio: L > 0 ? layerLength / L : 0,
+        type: 'foot-extra',
+      };
+    }
+
+    return {
+      layersTip: layersTip,
+      layersFoot: layersFoot,
+      length: L,
+      width: b,
+      thickness: thickness,
+      baseLayers: baseLayers,
+      extraLayers: extraLayers,
+    };
+  }
+
   function solveForLoad(params, options) {
     const opts = options || {};
     const targetAngle = typeof opts.targetAngle === 'number' ? opts.targetAngle : 90;
@@ -161,6 +202,7 @@
     computeTipAngle: computeTipAngle,
     computeBendingProfile: computeBendingProfile,
     solveForLoad: solveForLoad,
+    computeLaminateStack: computeLaminateStack,
     computeDefaultParams: computeDefaultParams,
   };
 });

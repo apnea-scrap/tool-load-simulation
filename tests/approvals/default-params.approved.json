@@ -1015,5 +1015,36 @@
       "x": 154.804,
       "y": 153.571
     }
-  ]
+  ],
+  "laminate": {
+    "layersTip": 2,
+    "layersFoot": 4,
+    "length": 250,
+    "width": 180,
+    "thickness": 0.35,
+    "baseLayers": [
+      {
+        "index": 1,
+        "length": 250,
+        "coverageRatio": 1
+      },
+      {
+        "index": 2,
+        "length": 250,
+        "coverageRatio": 1
+      }
+    ],
+    "extraLayers": [
+      {
+        "index": 1,
+        "length": 150,
+        "coverageRatio": 0.6
+      },
+      {
+        "index": 2,
+        "length": 50,
+        "coverageRatio": 0.2
+      }
+    ]
+  }
 }
