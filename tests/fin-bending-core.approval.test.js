@@ -50,36 +50,13 @@ describe('fin bending core approvals', () => {
       const laminate = core.computeLaminateStack(params);
 
       const shape = core.createBendingProfilePoints(profile);
-
-      const laminateSummary = {
-        layersTip: laminate.layersTip,
-        layersFoot: laminate.layersFoot,
-        length: round(laminate.length, 2),
-        width: round(laminate.width, 2),
-        thickness: round(laminate.thickness, 4),
-        baseLayers: (laminate.baseLayers || []).map((layer) => ({
-          index: layer.index,
-          length: round(layer.length, 2),
-          coverageRatio: round(layer.coverageRatio, 4),
-        })),
-        extraLayers: (laminate.extraLayers || []).map((layer) => ({
-          index: layer.index,
-          length: round(layer.length, 2),
-          coverageRatio: round(layer.coverageRatio, 4),
-        })),
-      };
+      const highlightPoint = Array.isArray(shape) ? shape[profile.maxCurvatureIndex] : null;
+      const laminateHighlight = Array.isArray(profile.x) ? profile.x[profile.maxCurvatureIndex] : null;
 
       const approvalPayload = {
-        scenario: {
-          id: scenario.id,
-          description: scenario.description || null,
-        },
-        params,
         load: round(load, 9),
         tipAngleDeg: round(profile.tipAngleDeg, 9),
         tipDeflection: round(profile.tipDeflection, 9),
-        points: shape,
-        laminate: laminateSummary,
       };
 
       let approvalError;
@@ -93,17 +70,22 @@ describe('fin bending core approvals', () => {
 
       let renderError;
       try {
-        renderBendingProfileSvg(`${scenario.id}.profile`, approvalPayload, svgVariant);
+        renderBendingProfileSvg(
+          `${scenario.id}.profile`,
+          shape,
+          {
+            load: round(load, 1),
+            tipAngleDeg: round(profile.tipAngleDeg, 1),
+            description: scenario.description || scenario.id,
+            highlight: highlightPoint ? { x: highlightPoint.x, y: highlightPoint.y } : null,
+          },
+          svgVariant
+        );
         renderLaminateStackSvg(
           `${scenario.id}.laminate`,
-          {
-            layersTip: laminateSummary.layersTip,
-            layersFoot: laminateSummary.layersFoot,
-            length: laminate.length,
-            width: laminate.width,
-            baseLayers: laminate.baseLayers,
-            extraLayers: laminate.extraLayers,
-          },
+          Object.assign({}, laminate, {
+            highlightX: laminateHighlight,
+          }),
           svgVariant
         );
       } catch (error) {

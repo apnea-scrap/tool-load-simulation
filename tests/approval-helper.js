@@ -29,13 +29,28 @@ function sanitizeVariant(variant) {
   return variant === 'received' ? 'received' : 'approved';
 }
 
-function renderBendingProfileSvg(name, data, variant = 'approved') {
-  if (!data || !Array.isArray(data.points) || data.points.length === 0) return null;
+function renderBendingProfileSvg(name, points, meta = {}, variant = 'approved') {
+  if (!Array.isArray(points) || points.length === 0) return null;
 
   const sanitizedVariant = sanitizeVariant(variant);
-  const svg = core.createBendingProfileSvg(data.points, {
-    description: `${sanitizedVariant === 'approved' ? 'Approved' : 'Received'} curve for default parameters, load ${data.load}, tip ${data.tipAngleDeg} degrees.`,
-  });
+  const load = typeof meta.load === 'number' ? meta.load : null;
+  const tipAngleDeg = typeof meta.tipAngleDeg === 'number' ? meta.tipAngleDeg : null;
+  const descContext = meta && typeof meta.description === 'string' ? meta.description : 'curve';
+  const descPrefix = sanitizedVariant === 'approved' ? 'Approved' : 'Received';
+
+  const detailParts = [`${descPrefix} ${descContext}`];
+  if (load !== null) detailParts.push(`load ${load}`);
+  if (tipAngleDeg !== null) detailParts.push(`tip ${tipAngleDeg} degrees`);
+
+  const svgOptions = {
+    description: `${detailParts.join(', ')}.`,
+  };
+
+  if (load !== null) svgOptions.load = load;
+  if (tipAngleDeg !== null) svgOptions.tipAngleDeg = tipAngleDeg;
+  if (meta && meta.highlight) svgOptions.highlight = meta.highlight;
+
+  const svg = core.createBendingProfileSvg(points, svgOptions);
 
   const target = writeArtifact(name, `${sanitizedVariant}.svg`, svg);
   if (sanitizedVariant === 'approved') {
