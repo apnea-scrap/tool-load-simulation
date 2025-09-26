@@ -53,7 +53,10 @@ describe('fin bending core approvals', () => {
       const highlightPoint = Array.isArray(shape) ? shape[profile.maxCurvatureIndex] : null;
       const laminateHighlight = Array.isArray(profile.x) ? profile.x[profile.maxCurvatureIndex] : null;
 
+      const paramsForPayload = cloneParams(params);
+
       const approvalPayload = {
+        params: paramsForPayload,
         load: round(load, 9),
         tipAngleDeg: round(profile.tipAngleDeg, 9),
         tipDeflection: round(profile.tipDeflection, 9),

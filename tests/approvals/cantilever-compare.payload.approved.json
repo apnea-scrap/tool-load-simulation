@@ -1,4 +1,12 @@
 {
+  "params": {
+    "layersFoot": 3,
+    "layersTip": 3,
+    "L": 250,
+    "b": 180,
+    "E": 32,
+    "thickness": 0.33
+  },
   "load": 23.53515625,
   "tipAngleDeg": 90.023321517,
   "tipDeflection": 195.757839562
