@@ -9,5 +9,9 @@
   },
   "load": 23.876953125,
   "tipAngleDeg": 90.031472459,
-  "tipDeflection": 153.570955958
+  "tipDeflection": 153.570955958,
+  "sectionInertia": {
+    "foot": 41.16,
+    "tip": 5.145
+  }
 }

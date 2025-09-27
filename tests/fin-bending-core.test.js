@@ -65,3 +65,11 @@ test('createLaminateStackSvg reflects layer counts', () => {
   expect(svg).toContain('Tip');
   expect(svg).toContain('<line');
 });
+
+test('computeSectionInertia reports higher inertia at the foot when layers are thicker', () => {
+  const params = createParams();
+  const inertia = core.computeSectionInertia(params);
+
+  expect(inertia.foot).toBeGreaterThan(inertia.tip);
+  expect(inertia.tip).toBeGreaterThan(0);
+});

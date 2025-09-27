@@ -154,6 +154,29 @@
     };
   }
 
+  function computeSectionInertia(params) {
+    if (!params) {
+      return { foot: 0, tip: 0 };
+    }
+
+    const width = Number(params.b);
+    const length = Number(params.L);
+
+    function inertiaAt(x) {
+      const thicknessHere = effectiveThicknessAt(x, params);
+      if (!isFinite(width) || width <= 0) return 0;
+      if (typeof thicknessHere !== 'number' || !isFinite(thicknessHere) || thicknessHere <= 0) return 0;
+      return width * Math.pow(thicknessHere, 3) / 12.0;
+    }
+
+    const tipPosition = isFinite(length) && length > 0 ? length : 0;
+
+    return {
+      foot: inertiaAt(0),
+      tip: inertiaAt(tipPosition),
+    };
+  }
+
   function createBendingProfilePoints(profile, options) {
     if (!profile || !Array.isArray(profile.X) || !Array.isArray(profile.Y)) return [];
 
@@ -377,6 +400,7 @@
     computeBendingProfile: computeBendingProfile,
     solveForLoad: solveForLoad,
     computeLaminateStack: computeLaminateStack,
+    computeSectionInertia: computeSectionInertia,
     computeDefaultParams: computeDefaultParams,
     createBendingProfilePoints: createBendingProfilePoints,
     createBendingProfileSvg: createBendingProfileSvg,
