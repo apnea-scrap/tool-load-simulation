@@ -7,6 +7,7 @@
   const computeBendingProfile = core.computeBendingProfile;
   const solveForLoad = core.solveForLoad;
   const computeLaminateStack = core.computeLaminateStack;
+  const computeSectionInertia = core.computeSectionInertia;
 
   const appRoot = document.getElementById('fin-bending-app');
   if (!appRoot) {
@@ -90,6 +91,7 @@
     const load = solveForLoad(params);
     const profile = computeBendingProfile(load, params);
     const laminateStack = computeLaminateStack(params);
+    const sectionInertia = computeSectionInertia(params);
     const loadKg = load / 9.81;
     const points = core.createBendingProfilePoints(profile);
     const highlightPoint = points[profile.maxCurvatureIndex];
@@ -114,7 +116,20 @@
       laminateContainer.innerHTML = laminateSvg || '';
     }
 
-    outputEl.textContent = 'Angle at tip = ' + profile.tipAngleDeg.toFixed(1) + '°, Load at tip = ' + load.toFixed(1) + ' N (' + loadKg.toFixed(2) + ' kg)';
+    const footInertia = sectionInertia && typeof sectionInertia.foot === 'number' && isFinite(sectionInertia.foot)
+      ? sectionInertia.foot
+      : NaN;
+    const tipInertia = sectionInertia && typeof sectionInertia.tip === 'number' && isFinite(sectionInertia.tip)
+      ? sectionInertia.tip
+      : NaN;
+
+    const formattedFootInertia = isFinite(footInertia) ? footInertia.toFixed(2) + ' mm⁴' : '—';
+    const formattedTipInertia = isFinite(tipInertia) ? tipInertia.toFixed(2) + ' mm⁴' : '—';
+
+    outputEl.innerHTML =
+      'Angle at tip = ' + profile.tipAngleDeg.toFixed(1) + '°, Load at tip = ' + load.toFixed(1) + ' N (' + loadKg.toFixed(2) + ' kg)' +
+      '<br>I at foot = ' + formattedFootInertia +
+      '<br>I at tip = ' + formattedTipInertia;
   }
 
   update();

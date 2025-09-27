@@ -48,6 +48,7 @@ describe('fin bending core approvals', () => {
       const load = core.solveForLoad(params);
       const profile = core.computeBendingProfile(load, params);
       const laminate = core.computeLaminateStack(params);
+      const inertia = core.computeSectionInertia(params);
 
       const shape = core.createBendingProfilePoints(profile);
       const highlightPoint = Array.isArray(shape) ? shape[profile.maxCurvatureIndex] : null;
@@ -60,6 +61,10 @@ describe('fin bending core approvals', () => {
         load: round(load, 9),
         tipAngleDeg: round(profile.tipAngleDeg, 9),
         tipDeflection: round(profile.tipDeflection, 9),
+        sectionInertia: {
+          foot: round(inertia.foot, 9),
+          tip: round(inertia.tip, 9),
+        },
       };
 
       let approvalError;
