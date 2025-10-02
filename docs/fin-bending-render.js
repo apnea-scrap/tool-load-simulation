@@ -8,6 +8,9 @@
   const solveForLoad = core.solveForLoad;
   const computeLaminateStack = core.computeLaminateStack;
   const computeSectionInertia = core.computeSectionInertia;
+  const createBendingProfilePoints = core.createBendingProfilePoints;
+  const createBendingProfileSvg = core.createBendingProfileSvg;
+  const createLaminateStackSvg = core.createLaminateStackSvg;
 
   const appRoot = document.getElementById('fin-bending-app');
   if (!appRoot) {
@@ -38,6 +41,8 @@
     '<div class="section">' +
     '  <h4>Bending Calculation</h4>' +
     '  <p id="output"></p>' +
+    '  <label>Load at tip [N]: <span id="loadVal"></span></label>' +
+    '  <input type="range" id="load" min="0" max="400" step="0.5" value="0" class="slider"><br>' +
     '  <div id="profileSvg" class="svg-output"></div>' +
     '  <div class="caption">Foot (left) — Tip (right)</div>' +
     '</div>';
@@ -78,7 +83,7 @@
         var value = metaCfg.parse(event.target.value);
         params[metaCfg.param] = value;
         labelEl.textContent = metaCfg.format(value);
-        update();
+        handleGeometryChange();
       });
     })(slider, meta, label);
   }
@@ -87,15 +92,81 @@
   const profileContainer = appRoot.querySelector('#profileSvg');
   const outputEl = appRoot.querySelector('#output');
 
-  function update() {
-    const load = solveForLoad(params);
+  var PROFILE_VIEWPORT_HEIGHT = 320;
+  if (profileContainer) {
+    profileContainer.style.height = PROFILE_VIEWPORT_HEIGHT + 'px';
+    profileContainer.style.display = 'block';
+  }
+
+  const loadSlider = appRoot.querySelector('#load');
+  const loadLabel = appRoot.querySelector('#loadVal');
+
+  if (!loadSlider || !loadLabel) {
+    throw new Error('Missing load slider controls.');
+  }
+
+  var loadForNinetyDegrees = 0;
+  var currentDisplayLoad = 0;
+
+  function formatLoadValue(value) {
+    return isFinite(value) ? Number(value).toFixed(1) : '—';
+  }
+
+  function syncLoadSliderBounds(referenceLoad) {
+    var min = 0;
+    var computedMax = Math.max(100, referenceLoad * 1.5);
+    if (!isFinite(computedMax) || computedMax <= min) {
+      computedMax = 100;
+    }
+    loadSlider.min = String(min);
+    loadSlider.max = computedMax.toFixed(1);
+  }
+
+  function setLoadSliderValue(value) {
+    var numericValue = Number(value);
+    if (!isFinite(numericValue) || numericValue < 0) {
+      numericValue = 0;
+    }
+    var sliderMax = Number(loadSlider.max);
+    if (isFinite(sliderMax) && numericValue > sliderMax) {
+      loadSlider.max = numericValue.toFixed(1);
+    }
+    loadSlider.value = numericValue;
+    loadLabel.textContent = formatLoadValue(numericValue);
+    currentDisplayLoad = numericValue;
+  }
+
+  function handleGeometryChange() {
+    loadForNinetyDegrees = solveForLoad(params);
+    syncLoadSliderBounds(loadForNinetyDegrees);
+    setLoadSliderValue(loadForNinetyDegrees);
+    render();
+  }
+
+  function handleLoadInput(event) {
+    var value = Number(event.target.value);
+    if (!isFinite(value)) {
+      value = 0;
+    }
+    currentDisplayLoad = value;
+    loadLabel.textContent = formatLoadValue(value);
+    render();
+  }
+
+  loadSlider.addEventListener('input', handleLoadInput);
+
+  function render() {
+    const load = currentDisplayLoad;
     const profile = computeBendingProfile(load, params);
     const laminateStack = computeLaminateStack(params);
     const sectionInertia = computeSectionInertia(params);
     const loadKg = load / 9.81;
-    const points = core.createBendingProfilePoints(profile);
-    const highlightPoint = points[profile.maxCurvatureIndex];
-    const profileSvg = core.createBendingProfileSvg(points, {
+    const loadForNinetyKg = loadForNinetyDegrees / 9.81;
+    const points = createBendingProfilePoints(profile);
+    const highlightPoint = points && profile && typeof profile.maxCurvatureIndex === 'number'
+      ? points[profile.maxCurvatureIndex]
+      : null;
+    const profileSvg = createBendingProfileSvg(points, {
       load: Number(load.toFixed(1)),
       tipAngleDeg: Number(profile.tipAngleDeg.toFixed(1)),
       description: `Interactive profile. Load ${load.toFixed(1)} N, tip angle ${profile.tipAngleDeg.toFixed(1)} degrees.`,
@@ -104,10 +175,17 @@
 
     if (profileContainer) {
       profileContainer.innerHTML = profileSvg || '';
+      var svgEl = profileContainer.querySelector('svg');
+      if (svgEl) {
+        svgEl.setAttribute('height', PROFILE_VIEWPORT_HEIGHT);
+        svgEl.style.height = PROFILE_VIEWPORT_HEIGHT + 'px';
+        svgEl.setAttribute('width', '100%');
+        svgEl.style.width = '100%';
+      }
     }
 
     const laminateHighlight = Array.isArray(profile.x) ? profile.x[profile.maxCurvatureIndex] : null;
-    const laminateSvg = core.createLaminateStackSvg(laminateStack, {
+    const laminateSvg = createLaminateStackSvg(laminateStack, {
       description: `Laminate layering for ${laminateStack.layersFoot} layers at the foot and ${laminateStack.layersTip} layers at the tip.`,
       highlightX: laminateHighlight,
     });
@@ -125,12 +203,14 @@
 
     const formattedFootInertia = isFinite(footInertia) ? footInertia.toFixed(2) + ' mm⁴' : '—';
     const formattedTipInertia = isFinite(tipInertia) ? tipInertia.toFixed(2) + ' mm⁴' : '—';
+    const formattedLoadFor90 = loadForNinetyDegrees.toFixed(1) + ' N (' + loadForNinetyKg.toFixed(2) + ' kg)';
 
     outputEl.innerHTML =
-      'Angle at tip = ' + profile.tipAngleDeg.toFixed(1) + '°, Load at tip = ' + load.toFixed(1) + ' N (' + loadKg.toFixed(2) + ' kg)' +
+      'Angle at tip = ' + profile.tipAngleDeg.toFixed(1) +
+      '<br>Load required for 90° = ' + formattedLoadFor90 +
       '<br>I at foot = ' + formattedFootInertia +
       '<br>I at tip = ' + formattedTipInertia;
   }
 
-  update();
+  handleGeometryChange();
 })();
