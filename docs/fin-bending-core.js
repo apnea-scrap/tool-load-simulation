@@ -11,6 +11,9 @@
   const DEFAULT_SEGMENTS = 200;
   const MIN_EXTRA_LAYER_LENGTH = 50;
   const DEFAULT_MARGIN = 20;
+  const TRAINING_FIN_AREA = 0.015; // 0.15 m x 0.10 m benchmark area
+  const DRAG_COEFFICIENT_MAX = 1.28;
+  const RIGHT_ANGLE_RAD = Math.PI / 2;
 
   function clampExtraLayers(layersFoot, layersTip) {
     const diff = Number(layersFoot) - Number(layersTip);
@@ -197,6 +200,68 @@
     }
 
     return points;
+  }
+
+  function interpolateDragCoefficient(angleRad) {
+    if (typeof angleRad !== 'number' || !isFinite(angleRad) || angleRad < 0) return 0;
+    const clamped = Math.min(angleRad, RIGHT_ANGLE_RAD);
+    return DRAG_COEFFICIENT_MAX * (1 - clamped / RIGHT_ANGLE_RAD);
+  }
+
+  function computeHydrodynamicResistance(load, params, options) {
+    if (!params) return 0;
+    const widthMm = Number(params.b);
+    const lengthMm = Number(params.L);
+    if (!isFinite(widthMm) || !isFinite(lengthMm) || widthMm <= 0 || lengthMm <= 0) return 0;
+
+    const opts = options || {};
+    var profile = opts.profile;
+    if (!profile) {
+      const computeOptions = typeof opts.segments === 'number' ? { segments: opts.segments } : undefined;
+      profile = computeBendingProfile(load, params, computeOptions);
+    }
+
+    if (!profile || !Array.isArray(profile.theta)) return 0;
+
+    const theta = profile.theta;
+    const xValues = Array.isArray(profile.x) ? profile.x : null;
+    if (theta.length < 2) return 0;
+
+    const widthMeters = widthMm / 1000;
+    var totalForceComponent = 0;
+
+    for (var i = 1; i < theta.length; i += 1) {
+      var angle = theta[i];
+      if (typeof angle !== 'number' || !isFinite(angle)) continue;
+      if (Math.abs(angle) >= RIGHT_ANGLE_RAD) continue;
+      var segmentLengthMm;
+      if (xValues) {
+        var prevX = xValues[i - 1];
+        var nextX = xValues[i];
+        if (!isFinite(prevX) || !isFinite(nextX)) continue;
+        segmentLengthMm = nextX - prevX;
+      } else {
+        segmentLengthMm = lengthMm / (theta.length - 1);
+      }
+      if (!isFinite(segmentLengthMm) || segmentLengthMm <= 0) continue;
+      var segmentLengthMeters = segmentLengthMm / 1000;
+      var projectedArea = widthMeters * segmentLengthMeters;
+      if (!isFinite(projectedArea) || projectedArea <= 0) continue;
+      var clampedAngle = Math.min(Math.max(Math.abs(angle), 0), RIGHT_ANGLE_RAD);
+      var angleToFlow = RIGHT_ANGLE_RAD - clampedAngle;
+      if (angleToFlow <= 0) continue;
+      var sinTheta = Math.sin(angleToFlow);
+      if (sinTheta <= 0) continue;
+      var cd = interpolateDragCoefficient(clampedAngle);
+      totalForceComponent += cd * sinTheta * projectedArea;
+    }
+
+    if (!isFinite(totalForceComponent) || totalForceComponent <= 0) return 0;
+
+    const benchmarkForceComponent = DRAG_COEFFICIENT_MAX * TRAINING_FIN_AREA;
+    if (!isFinite(benchmarkForceComponent) || benchmarkForceComponent <= 0) return 0;
+
+    return totalForceComponent / benchmarkForceComponent;
   }
 
   function describeProfile(options) {
@@ -405,5 +470,6 @@
     createBendingProfilePoints: createBendingProfilePoints,
     createBendingProfileSvg: createBendingProfileSvg,
     createLaminateStackSvg: createLaminateStackSvg,
+    computeHydrodynamicResistance: computeHydrodynamicResistance,
   };
 });

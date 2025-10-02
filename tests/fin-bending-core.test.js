@@ -73,3 +73,33 @@ test('computeSectionInertia reports higher inertia at the foot when layers are t
   expect(inertia.foot).toBeGreaterThan(inertia.tip);
   expect(inertia.tip).toBeGreaterThan(0);
 });
+
+test('hydrodynamic resistance matches area ratio for an unflexed blade', () => {
+  const params = createParams();
+  const resistance = core.computeHydrodynamicResistance(0, params);
+  const areaMeters = (params.b * params.L) / (1000 * 1000);
+  const expectedAreaRatio = areaMeters / 0.015;
+
+  expect(resistance).toBeGreaterThan(0);
+  expect(resistance).toBeCloseTo(expectedAreaRatio, 1);
+});
+
+test('hydrodynamic resistance decreases as load increases', () => {
+  const params = createParams();
+  const relaxed = core.computeHydrodynamicResistance(0, params);
+  const loaded = core.computeHydrodynamicResistance(80, params);
+
+  expect(loaded).toBeLessThan(relaxed);
+  expect(loaded).toBeGreaterThanOrEqual(0);
+});
+
+test('segments bent beyond 90 degrees contribute no resistance', () => {
+  const params = createParams();
+  const profile = {
+    theta: [0, Math.PI, Math.PI * 1.1],
+    x: [0, 100, 200],
+  };
+  const resistance = core.computeHydrodynamicResistance(100, params, { profile: profile });
+
+  expect(resistance).toBe(0);
+});

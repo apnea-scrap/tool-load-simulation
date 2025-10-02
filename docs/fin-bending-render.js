@@ -160,6 +160,7 @@
     const profile = computeBendingProfile(load, params);
     const laminateStack = computeLaminateStack(params);
     const sectionInertia = computeSectionInertia(params);
+    const hydrodynamicResistance = core.computeHydrodynamicResistance(load, params, { profile: profile });
     const loadKg = load / 9.81;
     const loadForNinetyKg = loadForNinetyDegrees / 9.81;
     const points = createBendingProfilePoints(profile);
@@ -204,12 +205,16 @@
     const formattedFootInertia = isFinite(footInertia) ? footInertia.toFixed(2) + ' mm⁴' : '—';
     const formattedTipInertia = isFinite(tipInertia) ? tipInertia.toFixed(2) + ' mm⁴' : '—';
     const formattedLoadFor90 = loadForNinetyDegrees.toFixed(1) + ' N (' + loadForNinetyKg.toFixed(2) + ' kg)';
+    const formattedResistance = isFinite(hydrodynamicResistance)
+      ? hydrodynamicResistance.toFixed(2) + ' units'
+      : '—';
 
     outputEl.innerHTML =
       'Angle at tip = ' + profile.tipAngleDeg.toFixed(1) +
       '<br>Load required for 90° = ' + formattedLoadFor90 +
       '<br>I at foot = ' + formattedFootInertia +
-      '<br>I at tip = ' + formattedTipInertia;
+      '<br>I at tip = ' + formattedTipInertia +
+      '<br>Hydrodynamic resistance score = ' + formattedResistance;
   }
 
   handleGeometryChange();
