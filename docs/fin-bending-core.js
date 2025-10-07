@@ -35,24 +35,20 @@
   function computeExtraLayerLengths(extraLayersCount, params) {
     if (!extraLayersCount || extraLayersCount <= 0) return [];
 
-    const minExtraLayerLength = resolveMinExtraLayerLength(params);
-    const baseLength = Math.max(0, minExtraLayerLength);
+    const resolvedMin = resolveMinExtraLayerLength(params);
     var bladeLength = params && Number(params.L);
     if (!isFinite(bladeLength) || bladeLength < 0) bladeLength = 0;
-    const endLength = Math.max(baseLength, bladeLength);
-    const range = endLength - baseLength;
-    const step = range / extraLayersCount;
+
+    const baseLength = Math.min(Math.max(0, resolvedMin), bladeLength);
+    const range = Math.max(0, bladeLength - baseLength);
+    const step = extraLayersCount > 0 ? range / extraLayersCount : 0;
 
     const lengths = new Array(extraLayersCount);
     for (var i = 0; i < extraLayersCount; i += 1) {
-      var length = baseLength + step * (i + 1);
+      var length = baseLength + step * i;
       if (length < baseLength) length = baseLength;
-      if (length > endLength) length = endLength;
+      if (length > bladeLength) length = bladeLength;
       lengths[i] = length;
-    }
-
-    if (range === 0 && baseLength > bladeLength) {
-      for (var j = 0; j < lengths.length; j += 1) lengths[j] = baseLength;
     }
 
     return lengths;
@@ -65,7 +61,7 @@
     const cutoffs = computeExtraLayerLengths(extraLayers, params);
 
     for (var i = 0; i < cutoffs.length; i += 1) {
-      if (x < cutoffs[i]) layersHere += 1;
+      if (x <= cutoffs[i]) layersHere += 1;
     }
 
     return layersHere * params.thickness;
@@ -402,8 +398,15 @@
         'height="' + widthPx.toFixed(2) + '" fill="rgba(0,0,200,0.3)" stroke="#000" stroke-width="0.8"/>\n';
     }
 
-    for (var j = 0; j < extraLayers.length; j += 1) {
-      const layer = extraLayers[j];
+    var renderExtraLayers = extraLayers.slice();
+    renderExtraLayers.sort(function (a, b) {
+      const lenA = a && typeof a.length === 'number' ? a.length : 0;
+      const lenB = b && typeof b.length === 'number' ? b.length : 0;
+      return lenB - lenA;
+    });
+
+    for (var j = 0; j < renderExtraLayers.length; j += 1) {
+      const layer = renderExtraLayers[j];
       const layerLengthPx = Math.max(0, (layer.length || 0) * lengthScale);
       layerRects += '  <rect x="' + x0.toFixed(2) + '" y="' + y0.toFixed(2) + '" width="' + layerLengthPx.toFixed(2) + '" ' +
         'height="' + widthPx.toFixed(2) + '" fill="rgba(200,0,0,0.3)" stroke="#000" stroke-width="0.8"/>\n';

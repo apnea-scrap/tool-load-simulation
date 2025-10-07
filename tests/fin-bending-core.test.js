@@ -87,7 +87,7 @@ test('extra layers are spaced evenly between minimum coverage and tip', () => {
   const laminate = core.computeLaminateStack(params);
   const lengths = laminate.extraLayers.map((layer) => layer.length);
 
-  expect(lengths).toEqual([200, 300]);
+  expect(lengths).toEqual([100, 200]);
 });
 
 test('effectiveThicknessAt reflects evenly spaced extra layers', () => {
@@ -97,6 +97,7 @@ test('effectiveThicknessAt reflects evenly spaced extra layers', () => {
   params.thickness = 1;
 
   expect(core.effectiveThicknessAt(100, params)).toBeCloseTo(4, 5);
+  expect(core.effectiveThicknessAt(150, params)).toBeCloseTo(3, 5);
   expect(core.effectiveThicknessAt(200, params)).toBeCloseTo(3, 5);
   expect(core.effectiveThicknessAt(300, params)).toBeCloseTo(2, 5);
   expect(core.effectiveThicknessAt(350, params)).toBeCloseTo(2, 5);
