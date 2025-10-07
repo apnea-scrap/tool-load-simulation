@@ -8,6 +8,7 @@ function createParams() {
     b: 180,
     E: 32,
     thickness: 0.35,
+    minExtraLayerLength: 50,
   };
 }
 
@@ -64,6 +65,41 @@ test('createLaminateStackSvg reflects layer counts', () => {
   expect(svg).toContain('Foot');
   expect(svg).toContain('Tip');
   expect(svg).toContain('<line');
+});
+
+test('minExtraLayerLength clamps short extra layers', () => {
+  const params = createParams();
+  params.minExtraLayerLength = 120;
+  params.L = 150;
+
+  const laminate = core.computeLaminateStack(params);
+  expect(Array.isArray(laminate.extraLayers)).toBe(true);
+  laminate.extraLayers.forEach((layer) => {
+    expect(layer.length).toBeGreaterThanOrEqual(params.minExtraLayerLength);
+  });
+});
+
+test('extra layers are spaced evenly between minimum coverage and tip', () => {
+  const params = createParams();
+  params.minExtraLayerLength = 100;
+  params.L = 300;
+
+  const laminate = core.computeLaminateStack(params);
+  const lengths = laminate.extraLayers.map((layer) => layer.length);
+
+  expect(lengths).toEqual([200, 300]);
+});
+
+test('effectiveThicknessAt reflects evenly spaced extra layers', () => {
+  const params = createParams();
+  params.minExtraLayerLength = 100;
+  params.L = 300;
+  params.thickness = 1;
+
+  expect(core.effectiveThicknessAt(100, params)).toBeCloseTo(4, 5);
+  expect(core.effectiveThicknessAt(200, params)).toBeCloseTo(3, 5);
+  expect(core.effectiveThicknessAt(300, params)).toBeCloseTo(2, 5);
+  expect(core.effectiveThicknessAt(350, params)).toBeCloseTo(2, 5);
 });
 
 test('computeSectionInertia reports higher inertia at the foot when layers are thicker', () => {

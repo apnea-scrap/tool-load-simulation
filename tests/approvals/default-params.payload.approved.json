@@ -5,11 +5,12 @@
     "L": 250,
     "b": 180,
     "E": 32,
-    "thickness": 0.35
+    "thickness": 0.35,
+    "minExtraLayerLength": 50
   },
-  "load": 23.876953125,
-  "tipAngleDeg": 90.031472459,
-  "tipDeflection": 153.570955958,
+  "load": 54.4921875,
+  "tipAngleDeg": 89.905017859,
+  "tipDeflection": 181.235301115,
   "sectionInertia": {
     "foot": 41.16,
     "tip": 5.145

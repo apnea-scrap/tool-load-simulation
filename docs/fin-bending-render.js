@@ -20,14 +20,16 @@
   appRoot.innerHTML = '' +
     '<div class="section">' +
     '  <h4>Geometry</h4>' +
-    '  <label>Layers at foot: <span id="layersFootVal"></span></label>' +
-    '  <input type="range" id="layersFoot" min="1" max="15" value="4" class="slider"><br>' +
-    '  <label>Layers at tip: <span id="layersTipVal"></span></label>' +
-    '  <input type="range" id="layersTip" min="1" max="15" value="2" class="slider"><br>' +
     '  <label>Free blade length [mm]: <span id="lengthVal"></span></label>' +
     '  <input type="range" id="length" min="100" max="600" step="10" value="250" class="slider"><br>' +
     '  <label>Blade width [mm]: <span id="widthVal"></span></label>' +
     '  <input type="range" id="width" min="50" max="300" step="10" value="180" class="slider"><br>' +
+    '  <label>Layers at foot: <span id="layersFootVal"></span></label>' +
+    '  <input type="range" id="layersFoot" min="1" max="15" value="4" class="slider"><br>' +
+    '  <label>Layers at tip: <span id="layersTipVal"></span></label>' +
+    '  <input type="range" id="layersTip" min="1" max="15" value="2" class="slider"><br>' +
+    '  <label>Min layer length [mm]: <span id="minExtraLayerLengthVal"></span></label>' +
+    '  <input type="range" id="minExtraLayerLength" min="0" max="600" step="5" value="50" class="slider"><br>' +
     '  <div id="laminateSvg" class="svg-output"></div>' +
     '  <div class="caption">Foot (left) — Tip (right)</div>' +
     '</div>' +
@@ -54,6 +56,7 @@
     layersTip: { param: 'layersTip', label: 'layersTipVal', parse: function (value) { return parseInt(value, 10); }, format: function (value) { return '' + value; } },
     length: { param: 'L', label: 'lengthVal', parse: function (value) { return parseInt(value, 10); }, format: function (value) { return '' + value; } },
     width: { param: 'b', label: 'widthVal', parse: function (value) { return parseInt(value, 10); }, format: function (value) { return '' + value; } },
+    minExtraLayerLength: { param: 'minExtraLayerLength', label: 'minExtraLayerLengthVal', parse: function (value) { return parseInt(value, 10); }, format: function (value) { return '' + value; } },
     E: { param: 'E', label: 'EVal', parse: function (value) { return parseFloat(value); }, format: function (value) { return '' + value; } },
     thickness: {
       param: 'thickness',

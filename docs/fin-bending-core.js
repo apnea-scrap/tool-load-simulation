@@ -9,7 +9,7 @@
   'use strict';
 
   const DEFAULT_SEGMENTS = 200;
-  const MIN_EXTRA_LAYER_LENGTH = 50;
+  const DEFAULT_MIN_EXTRA_LAYER_LENGTH = 50;
   const DEFAULT_MARGIN = 20;
   const TRAINING_FIN_AREA = 0.015; // 0.15 m x 0.10 m benchmark area
   const DRAG_COEFFICIENT_MAX = 1.28;
@@ -26,17 +26,46 @@
     return Math.round(value * factor) / factor;
   }
 
+  function resolveMinExtraLayerLength(params) {
+    const value = params && Number(params.minExtraLayerLength);
+    if (!isFinite(value) || value < 0) return DEFAULT_MIN_EXTRA_LAYER_LENGTH;
+    return value;
+  }
+
+  function computeExtraLayerLengths(extraLayersCount, params) {
+    if (!extraLayersCount || extraLayersCount <= 0) return [];
+
+    const minExtraLayerLength = resolveMinExtraLayerLength(params);
+    const baseLength = Math.max(0, minExtraLayerLength);
+    var bladeLength = params && Number(params.L);
+    if (!isFinite(bladeLength) || bladeLength < 0) bladeLength = 0;
+    const endLength = Math.max(baseLength, bladeLength);
+    const range = endLength - baseLength;
+    const step = range / extraLayersCount;
+
+    const lengths = new Array(extraLayersCount);
+    for (var i = 0; i < extraLayersCount; i += 1) {
+      var length = baseLength + step * (i + 1);
+      if (length < baseLength) length = baseLength;
+      if (length > endLength) length = endLength;
+      lengths[i] = length;
+    }
+
+    if (range === 0 && baseLength > bladeLength) {
+      for (var j = 0; j < lengths.length; j += 1) lengths[j] = baseLength;
+    }
+
+    return lengths;
+  }
+
   function effectiveThicknessAt(x, params) {
     const baseLayers = Number(params.layersTip) || 0;
     const extraLayers = clampExtraLayers(params.layersFoot, params.layersTip);
     var layersHere = baseLayers;
+    const cutoffs = computeExtraLayerLengths(extraLayers, params);
 
-    if (extraLayers > 0) {
-      for (var i = 1; i <= extraLayers; i += 1) {
-        const fraction = i / extraLayers;
-        const cutoff = Math.max(MIN_EXTRA_LAYER_LENGTH, params.L * (1 - fraction * 0.8));
-        if (x <= cutoff) layersHere += 1;
-      }
+    for (var i = 0; i < cutoffs.length; i += 1) {
+      if (x < cutoffs[i]) layersHere += 1;
     }
 
     return layersHere * params.thickness;
@@ -134,12 +163,12 @@
       };
     }
 
-    const extraLayers = new Array(extraLayersCount);
-    for (var j = 1; j <= extraLayersCount; j += 1) {
-      const fraction = j / extraLayersCount;
-      const layerLength = Math.max(MIN_EXTRA_LAYER_LENGTH, L * (1 - fraction * 0.8));
-      extraLayers[j - 1] = {
-        index: j,
+    const extraLengths = computeExtraLayerLengths(extraLayersCount, params);
+    const extraLayers = new Array(extraLengths.length);
+    for (var j = 0; j < extraLengths.length; j += 1) {
+      const layerLength = extraLengths[j];
+      extraLayers[j] = {
+        index: j + 1,
         length: layerLength,
         coverageRatio: L > 0 ? layerLength / L : 0,
         type: 'foot-extra',
@@ -456,6 +485,7 @@
       b: 180,
       E: 32,
       thickness: 0.35,
+      minExtraLayerLength: DEFAULT_MIN_EXTRA_LAYER_LENGTH,
     };
   }
 
