@@ -487,7 +487,7 @@
       L: 250,
       b: 180,
       E: 32,
-      thickness: 0.35,
+      thickness: 0.33,
       minExtraLayerLength: DEFAULT_MIN_EXTRA_LAYER_LENGTH,
     };
   }

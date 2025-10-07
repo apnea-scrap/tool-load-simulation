@@ -23,7 +23,7 @@
     '  <label>Free blade length [mm]: <span id="lengthVal"></span></label>' +
     '  <input type="range" id="length" min="100" max="600" step="10" value="250" class="slider"><br>' +
     '  <label>Blade width [mm]: <span id="widthVal"></span></label>' +
-    '  <input type="range" id="width" min="50" max="300" step="10" value="180" class="slider"><br>' +
+    '  <input type="range" id="width" min="50" max="600" step="10" value="180" class="slider"><br>' +
     '  <label>Layers at foot: <span id="layersFootVal"></span></label>' +
     '  <input type="range" id="layersFoot" min="1" max="15" value="4" class="slider"><br>' +
     '  <label>Layers at tip: <span id="layersTipVal"></span></label>' +
@@ -38,7 +38,7 @@
     '  <label>Young\'s modulus E [GPa]: <span id="EVal"></span></label>' +
     '  <input type="range" id="E" min="20" max="40" step="0.5" value="32" class="slider"><br>' +
     '  <label>Layer thickness [mm]: <span id="thicknessVal"></span></label>' +
-    '  <input type="range" id="thickness" min="0.2" max="0.6" step="0.01" value="0.35" class="slider"><br>' +
+    '  <input type="range" id="thickness" min="0.2" max="0.6" step="0.01" value="0.33" class="slider"><br>' +
     '</div>' +
     '<div class="section">' +
     '  <h4>Bending Calculation</h4>' +
