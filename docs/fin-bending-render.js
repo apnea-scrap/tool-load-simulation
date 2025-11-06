@@ -225,9 +225,9 @@
       '<br>Load required for 90° = ' + formattedLoadFor90 +
       '<br>I at foot = ' + formattedFootInertia +
       '<br>I at tip = ' + formattedTipInertia +
-      '<br>Hydrodynamic resistance score MaxLoad = ' + formattedResistanceMaxLoad +
       '<br>Hydrodynamic resistance score 5N = ' + formattedResistance5N +
-      '<br>Hydrodynamic resistance score 10N = ' + formattedResistance10N;
+      '<br>Hydrodynamic resistance score 10N = ' + formattedResistance10N +
+      '<br>Hydrodynamic resistance score MaxLoad = ' + formattedResistanceMaxLoad;
   }
 
   handleGeometryChange();
