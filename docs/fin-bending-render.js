@@ -163,7 +163,9 @@
     const profile = computeBendingProfile(load, params);
     const laminateStack = computeLaminateStack(params);
     const sectionInertia = computeSectionInertia(params);
-    const hydrodynamicResistance = core.computeHydrodynamicResistance(load, params, { profile: profile });
+    const hydrodynamicResistanceMaxLoad = core.computeHydrodynamicResistance(load, params, { profile: profile });
+    const hydrodynamicResistance5N = core.computeHydrodynamicResistance(5, params);
+    const hydrodynamicResistance10N = core.computeHydrodynamicResistance(10, params);
     const loadKg = load / 9.81;
     const loadForNinetyKg = loadForNinetyDegrees / 9.81;
     const points = createBendingProfilePoints(profile);
@@ -208,8 +210,14 @@
     const formattedFootInertia = isFinite(footInertia) ? footInertia.toFixed(2) + ' mm⁴' : '—';
     const formattedTipInertia = isFinite(tipInertia) ? tipInertia.toFixed(2) + ' mm⁴' : '—';
     const formattedLoadFor90 = loadForNinetyDegrees.toFixed(1) + ' N (' + loadForNinetyKg.toFixed(2) + ' kg)';
-    const formattedResistance = isFinite(hydrodynamicResistance)
-      ? hydrodynamicResistance.toFixed(2) + ' units'
+    const formattedResistanceMaxLoad = isFinite(hydrodynamicResistanceMaxLoad)
+      ? hydrodynamicResistanceMaxLoad.toFixed(2) + ' units'
+      : '—';
+    const formattedResistance5N = isFinite(hydrodynamicResistance5N)
+      ? hydrodynamicResistance5N.toFixed(2) + ' units'
+      : '—';
+    const formattedResistance10N = isFinite(hydrodynamicResistance10N)
+      ? hydrodynamicResistance10N.toFixed(2) + ' units'
       : '—';
 
     outputEl.innerHTML =
@@ -217,7 +225,9 @@
       '<br>Load required for 90° = ' + formattedLoadFor90 +
       '<br>I at foot = ' + formattedFootInertia +
       '<br>I at tip = ' + formattedTipInertia +
-      '<br>Hydrodynamic resistance score = ' + formattedResistance;
+      '<br>Hydrodynamic resistance score MaxLoad = ' + formattedResistanceMaxLoad +
+      '<br>Hydrodynamic resistance score 5N = ' + formattedResistance5N +
+      '<br>Hydrodynamic resistance score 10N = ' + formattedResistance10N;
   }
 
   handleGeometryChange();
