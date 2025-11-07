@@ -23,7 +23,7 @@
     '  <label>Free blade length [mm]: <span id="lengthVal"></span></label>' +
     '  <input type="range" id="length" min="100" max="600" step="10" value="250" class="slider"><br>' +
     '  <label>Blade width [mm]: <span id="widthVal"></span></label>' +
-    '  <input type="range" id="width" min="50" max="600" step="10" value="180" class="slider"><br>' +
+    '  <input type="range" id="width" min="50" max="700" step="10" value="180" class="slider"><br>' +
     '  <label>Layers at foot: <span id="layersFootVal"></span></label>' +
     '  <input type="range" id="layersFoot" min="1" max="15" value="4" class="slider"><br>' +
     '  <label>Layers at tip: <span id="layersTipVal"></span></label>' +
